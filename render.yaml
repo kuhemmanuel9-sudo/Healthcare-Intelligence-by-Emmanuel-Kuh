@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: healthcare-quality-intelligence
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
