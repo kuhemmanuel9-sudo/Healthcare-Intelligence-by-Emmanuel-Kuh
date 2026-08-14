@@ -1325,7 +1325,7 @@
             <div class="signal-tile">
               <span>Data stream</span>
               <strong id="sourceChip">CMS Provider Data</strong>
-              <em>Current hospital CSV resources</em>
+              <em>Current CMS JSON datastore</em>
             </div>
             <div class="signal-tile">
               <span>Risk engine</span>
@@ -1474,6 +1474,7 @@
   </script>
 
   <script>
+    const CMS_DATASTORE_ROOT = "https://data.cms.gov/provider-data/api/1/datastore/query";
     const CMS_META_ROOT = "https://data.cms.gov/provider-data/api/1/metastore/schemas/dataset/items";
     const CMS_PROXY_PATH = "/api/cms";
     const HEALTHCARE_API_BASE = String(window.HEALTHCARE_API_BASE || "").replace(/\/+$/, "");
@@ -1689,7 +1690,34 @@
       });
     }
 
+    function datastoreUrl(datasetId, limit, offset) {
+      const url = new URL(`${CMS_DATASTORE_ROOT}/${encodeURIComponent(datasetId)}/0`);
+      url.searchParams.set("limit", String(limit));
+      url.searchParams.set("offset", String(offset));
+      return url.toString();
+    }
+
+    async function fetchDatastorePage(datasetId, limit, offset) {
+      const response = await fetch(datastoreUrl(datasetId, limit, offset), {
+        headers: { accept: "application/json" },
+        cache: "no-store"
+      });
+      if (!response.ok) throw new Error(`CMS datastore ${datasetId} returned ${response.status}`);
+      return normalizeRecords(await response.json());
+    }
+
     async function fetchDataset(datasetId) {
+      const limit = 10000;
+      const maxPages = 5;
+      const rows = [];
+      for (let page = 0; page < maxPages; page += 1) {
+        const offset = page * limit;
+        const pageRows = await fetchDatastorePage(datasetId, limit, offset);
+        rows.push(...pageRows);
+        if (pageRows.length < limit) break;
+      }
+      if (rows.length) return rows;
+
       const metadataResponse = await fetch(metadataUrl(datasetId), {
         headers: { accept: "application/json" },
         cache: "no-store"
@@ -1708,7 +1736,7 @@
     }
 
     async function fetchProxySnapshot(selectedState) {
-      if (location.protocol === "file:" && !HEALTHCARE_API_BASE) return null;
+      if (!HEALTHCARE_API_BASE) return null;
       const url = new URL(`${HEALTHCARE_API_BASE || location.origin}${CMS_PROXY_PATH}`);
       if (selectedState) url.searchParams.set("state", selectedState);
       const response = await fetch(url.toString(), { cache: "no-store" });
@@ -2080,7 +2108,7 @@
           if (!hospitals.length || !hrrp.length) throw new Error("CMS returned an empty dataset");
           state.hospitals = selectedState ? hospitals.filter((row) => value(row, ["State", "state"], "") === selectedState) : hospitals;
           state.hrrp = selectedState ? hrrp.filter((row) => value(row, ["State", "state"], "") === selectedState) : hrrp;
-          state.sourceMode = "live-direct";
+          state.sourceMode = "live";
         }
       } catch (error) {
         state.hospitals = fallbackHospitals;
