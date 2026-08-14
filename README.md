@@ -23,15 +23,6 @@ The app can run in one HTML file and fetch CMS metadata/CSV resources directly i
 
 
 
-
-The HTML still tries direct CMS metadata/CSV fetches when no server is present. If the browser or CMS blocks direct fetches, the app falls back to sample data. To keep live mode on GitHub Pages, deploy `server.js` somewhere public and set this near the top of the HTML script:
-
-```html
-<script>
-  window.HEALTHCARE_API_BASE = "https://your-healthcare-backend-url";
-</script>
-```
-
 ## Run the Live Node Server
 
 ```powershell
