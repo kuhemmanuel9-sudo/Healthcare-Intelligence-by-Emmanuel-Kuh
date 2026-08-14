@@ -23,15 +23,6 @@ The GitHub Pages version runs as a static site and loads a real CMS Provider Dat
 - Responsive dark-mode healthcare analytics UI
 - Browser voice alerts and explanations
 
-## Deploy on GitHub Pages
-
-Upload the files in `healthcare-quality-intelligence-github-upload` to the root of a GitHub repository, then enable GitHub Pages from the repository settings.
-
-Recommended GitHub upload files:
-
-- `index.html`
-- `README.md`
-- `data/cms-snapshot.json`
 
 ## Run the Live Node Server
 
@@ -44,9 +35,9 @@ npm start
 
 Open:
 
-```text
+
 http://127.0.0.1:4185/
-```
+
 
 For phone testing on the same Wi-Fi, replace `127.0.0.1` with your laptop IPv4 address and keep port `4185`.
 
