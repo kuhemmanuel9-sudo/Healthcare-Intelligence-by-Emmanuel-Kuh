@@ -8,12 +8,13 @@ Healthcare Quality Intelligence is a premium red-and-blue healthcare analytics c
 
 - CMS Hospital General Information, dataset `xubh-q36u`
 - CMS Hospital Readmissions Reduction Program, dataset `9n3s-kdb3`
+- GitHub Pages CMS snapshot, file `data/cms-snapshot.json`
 
-The GitHub Pages version runs in one HTML file and fetches CMS Provider Data JSON directly from the public datastore API. No API key, Node server, or backend is required for the static deployment.
+The GitHub Pages version runs as a static site and loads a real CMS Provider Data snapshot from `data/cms-snapshot.json`. No API key is required. A backend proxy is optional if you want automatic live refreshes.
 
 ## Features
 
-- Live CMS datastore refresh button
+- CMS snapshot refresh button for GitHub Pages
 - State, city, ZIP, hospital, and county search
 - Hospital quality score cards
 - Dynamic Excess Readmission Risk Index
@@ -30,6 +31,7 @@ Recommended GitHub upload files:
 
 - `index.html`
 - `README.md`
+- `data/cms-snapshot.json`
 
 ## Run the Live Node Server
 

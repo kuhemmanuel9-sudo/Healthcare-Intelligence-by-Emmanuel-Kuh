@@ -1477,6 +1477,7 @@
     const CMS_DATASTORE_ROOT = "https://data.cms.gov/provider-data/api/1/datastore/query";
     const CMS_META_ROOT = "https://data.cms.gov/provider-data/api/1/metastore/schemas/dataset/items";
     const CMS_PROXY_PATH = "/api/cms";
+    const CMS_SNAPSHOT_PATH = "data/cms-snapshot.json";
     const HEALTHCARE_API_BASE = String(window.HEALTHCARE_API_BASE || "").replace(/\/+$/, "");
     const DATASETS = {
       hospitals: "xubh-q36u",
@@ -1746,6 +1747,27 @@
       return payload;
     }
 
+    async function fetchStaticSnapshot(selectedState) {
+      try {
+        const response = await fetch(CMS_SNAPSHOT_PATH, {
+          headers: { accept: "application/json" },
+          cache: "no-store"
+        });
+        if (!response.ok) return null;
+        const payload = await response.json();
+        if (!payload || !Array.isArray(payload.hospitals) || !Array.isArray(payload.hrrp)) return null;
+        return {
+          ...payload,
+          sourceMode: payload.sourceMode || "live-snapshot",
+          refreshedAt: payload.refreshedAt || "",
+          hospitals: selectedState ? payload.hospitals.filter((row) => value(row, ["State", "state"], "") === selectedState) : payload.hospitals,
+          hrrp: selectedState ? payload.hrrp.filter((row) => value(row, ["State", "state"], "") === selectedState) : payload.hrrp
+        };
+      } catch {
+        return null;
+      }
+    }
+
     function keyMap(row) {
       const map = {};
       Object.keys(row || {}).forEach((key) => {
@@ -1905,6 +1927,7 @@
 
     function sourceLabel() {
       if (state.sourceMode === "live-proxy") return "Live CMS proxy";
+      if (state.sourceMode === "live-snapshot") return "Live CMS snapshot";
       if (state.sourceMode === "live-direct") return "Live CMS direct";
       if (state.sourceMode === "live") return "Live CMS API";
       return "Demo fallback";
@@ -2101,14 +2124,22 @@
           state.sourceMode = proxied.sourceMode || "live-proxy";
           state.lastUpdated = proxied.refreshedAt || "";
         } else {
-          const [hospitals, hrrp] = await Promise.all([
-            fetchDataset(DATASETS.hospitals),
-            fetchDataset(DATASETS.readmissions)
-          ]);
-          if (!hospitals.length || !hrrp.length) throw new Error("CMS returned an empty dataset");
-          state.hospitals = selectedState ? hospitals.filter((row) => value(row, ["State", "state"], "") === selectedState) : hospitals;
-          state.hrrp = selectedState ? hrrp.filter((row) => value(row, ["State", "state"], "") === selectedState) : hrrp;
-          state.sourceMode = "live";
+          const snapshot = await fetchStaticSnapshot(selectedState);
+          if (snapshot) {
+            state.hospitals = snapshot.hospitals;
+            state.hrrp = snapshot.hrrp;
+            state.sourceMode = snapshot.sourceMode || "live-snapshot";
+            state.lastUpdated = snapshot.refreshedAt || "";
+          } else {
+            const [hospitals, hrrp] = await Promise.all([
+              fetchDataset(DATASETS.hospitals),
+              fetchDataset(DATASETS.readmissions)
+            ]);
+            if (!hospitals.length || !hrrp.length) throw new Error("CMS returned an empty dataset");
+            state.hospitals = selectedState ? hospitals.filter((row) => value(row, ["State", "state"], "") === selectedState) : hospitals;
+            state.hrrp = selectedState ? hrrp.filter((row) => value(row, ["State", "state"], "") === selectedState) : hrrp;
+            state.sourceMode = "live";
+          }
         }
       } catch (error) {
         state.hospitals = fallbackHospitals;
